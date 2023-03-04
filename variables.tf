@@ -32,3 +32,25 @@ variable "bucket_location" {
   default     = "EU"
   description = "Cloud Storage Bucket Location"
 }
+
+variable "email_address" {
+  type        = string
+  description = "Your Email Address for Notifications"
+}
+
+variable "service_account" {
+  type        = string
+  description = "Service Account"
+}
+
+variable "instance_type" {
+  type        = string
+  default     = "e2-medium"
+  description = "Compute Instance Type"
+}
+
+variable "instance_image" {
+  type        = string
+  default     = "rocky-linux-cloud/rocky-linux-8"
+  description = "Compute Instance Image"
+}
