@@ -1,5 +1,5 @@
 locals {
-    czs = data.google_compute_zones.available.names
+  czs = data.google_compute_zones.available.names
 }
 
 resource "random_id" "ci_node_id" {
@@ -28,5 +28,24 @@ resource "google_compute_instance" "toggl_compute_instance" {
     initialize_params {
       image = var.instance_image
     }
+  }
+
+  attached_disk {
+    source      = google_compute_disk.postgres_disk[count.index].self_link
+    device_name = "postgres-disk0"
+    mode        = "READ_WRITE"
+  }
+}
+
+resource "google_compute_disk" "postgres_disk" {
+  count = 2
+
+  name = "postgres-disk-${random_id.ci_node_id[count.index].dec}"
+  type = "pd-ssd"
+  zone = local.czs[0]
+  size = 25
+
+  lifecycle {
+    prevent_destroy = true
   }
 }
