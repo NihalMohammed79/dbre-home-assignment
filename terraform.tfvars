@@ -1,3 +1,5 @@
+# Edit the `project_id`, `bucket_name`, `email_address`, `service_account` fields
+
 project_id       = "spiritual-tiger-379914"
 credentials_path = "./files/credentials.json"
 region           = "europe-central2"
