@@ -1,0 +1,106 @@
+---
+- hosts: replica
+  remote_user: toggl_ssh_user
+  gather_facts: no
+  
+  tasks:
+    - name: Load Variables
+      include_vars:
+        file: ./variables.yml
+        name: variable_data
+    
+    - name: Replication settings in Standby Server
+      ansible.builtin.shell: |
+        cat >> {{ variable_data.pg_data_path }}/postgresql.conf << EOF
+        listen_addresses = '*'
+        wal_level = replica
+        wal_log_hints = on
+        archive_mode = off
+        archive_command = ''
+        restore_command = ''
+        recovery_target_timeline = 'latest'
+        max_wal_senders = 10
+        max_replication_slots = 10
+        primary_slot_name = 'node_1_slot'
+        hot_standby = on
+        log_filename = 'postgresql-%Y-%m-%d.log'
+      become: yes
+      become_method: sudo
+      become_user: postgres
+      
+    - name: Backup Config Files
+      ansible.builtin.copy:
+        src: '{{ variable_data.pg_data_path }}/{{item}}'
+        dest: "{{ variable_data.pg_base_path }}"
+        remote_src: yes
+      loop:
+        - pg_hba.conf
+        - postgresql.conf
+      become: yes
+      become_method: sudo
+      become_user: postgres
+    
+    - name: Delete Data Directory
+      file:
+        path: "{{ variable_data.pg_data_path }}"
+        state: absent
+      become: yes
+    
+    - name: Backup
+      ansible.builtin.shell: |
+        pg_basebackup -h {{ variable_data.instance_1 }} -U replicator -p 5432 -D {{ variable_data.pg_data_path }} -Fp -Xs -P -R --checkpoint=fast
+      become: yes
+      become_method: sudo
+      become_user: postgres
+    
+    - name: Restore Standby Config Files
+      ansible.builtin.copy:
+        src: '{{ variable_data.pg_base_path }}/{{item}}'
+        dest: "{{ variable_data.pg_data_path }}"
+        remote_src: yes
+      loop:
+        - pg_hba.conf
+        - postgresql.conf
+      become: yes
+      become_method: sudo
+      become_user: postgres
+    
+    - name: Start Postgres
+      systemd:
+        state: started
+        name: postgresql-15
+      become: yes
+    
+    - name: Create Backup Script
+      ansible.builtin.copy:
+        dest: /var/lib/pgsql/db_backup.sh
+        content: |
+          pg_dumpall -U postgres -f /var/lib/pgsql/15/backups/db_backup_$(date +%Y%m%d).sql
+          gsutil cp /var/lib/pgsql/15/backups/db_backup_$(date +%Y%m%d).sql {{ variable_data.bucket_url }}
+        mode: '0755'
+      become: yes
+      become_method: sudo
+      become_user: postgres
+    
+    - name: Daily Cron Job for Cloud Storage Backup
+      ansible.builtin.cron:
+        name: "Daily backup"
+        minute: "0"
+        hour: "1"
+        job: "/var/lib/pgsql/db_backup.sh"
+      become: yes
+      become_method: sudo
+      become_user: postgres
+    
+    - name: Copy Service Account Key to Remote Host
+      ansible.builtin.copy:
+        src: "{{ variable_data.credentials_file }}"
+        dest: /tmp/account.json
+      become: yes
+    
+    - name: Authenticate Service Account
+      ansible.builtin.shell: |
+        gcloud auth activate-service-account --key-file=/tmp/account.json
+      become: yes
+      become_method: sudo
+      become_user: postgres

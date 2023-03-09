@@ -1,6 +1,6 @@
 resource "google_storage_bucket" "toggl_backup_bucket" {
   project                     = var.project_id
-  name                        = "toggl-backup-bucket-${random_id.random.dec}"
+  name                        = var.bucket_name
   location                    = var.bucket_location
   force_destroy               = true
   storage_class               = "STANDARD"

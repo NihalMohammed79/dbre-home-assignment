@@ -1,0 +1,9 @@
+---
+- name: Configuration of the Compute Instances
+  import_playbook: instance_config.yml
+
+- name: Configuration of the Master Node
+  import_playbook: master_config.yml
+
+- name: Configuration of the Replica Node
+  import_playbook: replica_config.yml

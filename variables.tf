@@ -5,25 +5,21 @@ variable "project_id" {
 
 variable "credentials_path" {
   type        = string
-  default     = "/files/credentials.json"
   description = "Path to Google Credential File"
 }
 
 variable "region" {
   type        = string
-  default     = "europe-central2"
   description = "Region"
 }
 
 variable "vpc_cidr" {
   type        = string
-  default     = "10.123.0.0/16"
   description = "Internal Address Range"
 }
 
 variable "access_ip" {
   type        = string
-  default     = "0.0.0.0/0"
   description = "Your Public IP Address"
 }
 
@@ -31,6 +27,11 @@ variable "bucket_location" {
   type        = string
   default     = "EU"
   description = "Cloud Storage Bucket Location"
+}
+
+variable "bucket_name" {
+  type        = string
+  description = "A Unique Name for the Cloud Storage Bucket"
 }
 
 variable "email_address" {
@@ -45,12 +46,20 @@ variable "service_account" {
 
 variable "instance_type" {
   type        = string
-  default     = "e2-medium"
   description = "Compute Instance Type"
 }
 
 variable "instance_image" {
   type        = string
-  default     = "rocky-linux-cloud/rocky-linux-8"
   description = "Compute Instance Image"
+}
+
+variable "ssh_user" {
+  type        = string
+  description = "ssh User"
+}
+
+variable "public_key_path" {
+  type        = string
+  description = "Path To Public SSH Key"
 }

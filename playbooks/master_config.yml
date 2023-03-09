@@ -1,0 +1,54 @@
+---
+- hosts: master
+  remote_user: toggl_ssh_user
+  gather_facts: no
+  
+  tasks:
+    - name: Load Variables
+      include_vars:
+        file: ./variables.yml
+        name: variable_data
+        
+    - name: Allow Connections from Any Address and Setting Replication Slots
+      ansible.builtin.shell: |
+        cat >> {{ variable_data.pg_data_path }}/postgresql.conf << EOF
+        listen_addresses = '*'
+        max_wal_senders = 10
+        max_replication_slots = 10
+        log_filename = 'postgresql-%Y-%m-%d.log'
+        EOF
+      become: yes
+      become_method: sudo
+      become_user: postgres
+    
+    - name: Create Replication User, Replication Slots and pgbench DB
+      ansible.builtin.copy:
+        dest: /tmp/dbscript.sql
+        content: |
+          CREATE USER replicator WITH replication;
+          SELECT * FROM pg_create_physical_replication_slot('node_1_slot');
+          SELECT * FROM pg_create_physical_replication_slot('node_2_slot');
+          CREATE DATABASE pgbench;
+      become: yes
+      become_method: sudo
+      become_user: postgres
+    
+    - name: Start Postgres
+      systemd:
+        state: started
+        name: postgresql-15
+      become: yes
+    
+    - name: Run the Script
+      ansible.builtin.shell: |
+        psql -d postgres < /tmp/dbscript.sql
+      become: yes
+      become_method: sudo
+      become_user: postgres
+    
+    - name: Initialize DB with pgbench Schema
+      ansible.builtin.shell: |
+        {{variable_data.pg_bin_path}}/pgbench -i -d pgbench
+      become: yes
+      become_method: sudo
+      become_user: postgres

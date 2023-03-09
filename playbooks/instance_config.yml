@@ -1,0 +1,62 @@
+---
+- hosts: all
+  remote_user: toggl_ssh_user
+  gather_facts: no
+  become: yes
+  
+  tasks:
+    - name: Load Variables
+      include_vars:
+        file: ./variables.yml
+        name: variable_data
+    
+    - name: Prepare Postgres Installation
+      ansible.builtin.shell: |
+        dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+    
+    - name: Install Postgres Packages
+      ansible.builtin.dnf:
+        name:
+          - postgresql15
+          - postgresql15-server
+          - postgresql15-contrib
+        state: latest
+        
+    - name: Check if PostgreSQL is initialized
+      ansible.builtin.stat:
+        path: "{{ variable_data.pg_data_path }}/pg_hba.conf"
+      register: postgres_data
+      
+    - name: Empty data dir
+      ansible.builtin.file:
+        path: "{{ variable_data.pg_data_path }}"
+        state: absent
+      when: not postgres_data.stat.exists
+    
+    - name: Initialize PostgreSQL
+      ansible.builtin.shell: "{{ variable_data.pg_bin_path }}/postgresql-15-setup initdb"
+      become: yes
+      when: not postgres_data.stat.exists
+    
+    - name: Adding entries to pg_hba.conf for the replication user
+      ansible.builtin.shell: |
+        cat >> {{ variable_data.pg_data_path }}/pg_hba.conf << EOF
+        host    all             replicator      {{ variable_data.instance_1 }}  trust
+        host    replication     replicator      {{ variable_data.instance_1 }}  trust
+        host    all             replicator      {{ variable_data.instance_2 }}  trust
+        host    replication     replicator      {{ variable_data.instance_2 }}  trust
+        host    all             all             0.0.0.0/0                     md5
+        EOF
+      become: yes
+      become_method: sudo
+      become_user: postgres
+    
+    - name: Adding server 1 to /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        line: "{{ variable_data.private_ip_1 }} {{ variable_data.instance_1 }}"
+
+    - name: Adding server 2 to /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        line: "{{ variable_data.private_ip_2 }} {{ variable_data.instance_2 }}"

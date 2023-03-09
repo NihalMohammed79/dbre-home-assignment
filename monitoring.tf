@@ -16,8 +16,9 @@ resource "google_monitoring_alert_policy" "high_cpu_usage_alert_policy" {
     display_name = "High CPU Usage on Primary DB"
 
     condition_threshold {
+      # Unit is Ratio
       threshold_value = "0.9"
-      filter          = "metric.type=\"compute.googleapis.com/instance/cpu/utilization\" resource.type=\"gce_instance\" resource.label.\"instance_id\"=\"${google_compute_instance.toggl_compute_instance[0].id}\""
+      filter          = "metric.type=\"compute.googleapis.com/instance/cpu/utilization\" AND resource.type=\"gce_instance\" AND resource.label.\"instance_id\"=\"${google_compute_instance.toggl_compute_instance[0].id}\""
       duration        = "60s"
       comparison      = "COMPARISON_GT"
 
@@ -38,8 +39,9 @@ resource "google_monitoring_alert_policy" "high_disk_usage_alert_policy" {
     display_name = "High Disk Usage on Primary DB"
 
     condition_threshold {
-      threshold_value = "85"
-      filter          = "metric.type=\"compute.googleapis.com/guest/disk/bytes_used\" AND resource.type=\"gce_instance\" resource.label.\"instance_id\"=\"${google_compute_instance.toggl_compute_instance[0].id}\""
+      # Unit is Percent
+      threshold_value = "85.0"
+      filter          = "metric.type=\"agent.googleapis.com/disk/percent_used\" AND resource.type=\"gce_instance\" AND resource.label.\"instance_id\"=\"${google_compute_instance.toggl_compute_instance[0].id}\""
       duration        = "60s"
       comparison      = "COMPARISON_GT"
 
