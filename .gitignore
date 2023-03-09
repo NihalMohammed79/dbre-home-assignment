@@ -1,12 +1,6 @@
-# Ignore JSON Key Files
-*.json
-
 # Ignore Terraform State and Error Files
 *.tfstate
 *.tfstate.*
 
 # Ignore Other .terraform Files and Folders
 .terraform*
-
-# Ignore Terraform Cloud File
-# backends.tf

@@ -1,9 +1,9 @@
-terraform {
-  cloud {
-    organization = "toggl"
+# terraform {
+#   cloud {
+#     organization = "toggl"
 
-    workspaces {
-      name = "dbre-home-assignment"
-    }
-  }
-}
+#     workspaces {
+#       name = "dbre-home-assignment"
+#     }
+#   }
+# }
